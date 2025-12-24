@@ -2,81 +2,64 @@
 <html>
 
 <head>
-	<!-- update this url based on where you are serving, this js code is embeded in the server for ease of use -->
-	<!-- <script src="http://localhost:1337/framecode.js"></script> -->
 	<script>
-		// function start() {
-		// 	frameMessaging.onHostMessage = onHostMessage;
-		// 	frameMessaging.init();
-		// }
 
-		// function onHostMessage(msg) {
-		// 	// Incoming messages!
-		// 	var type = msg.type;
-		// 	var data = msg.data;
-		// 	console.log("type--> " + type);
-		// 	console.log("Data--> " + JSON.stringify(data));
-		// 	switch (type) {
-		// 		case "SOCKET_OPEN":
-		// 			console.log("SOCKET_OPEN");
-		// 			break;
-
-		// 		case "SOCKET_CLOSE":
-		// 			console.log("SOCKET_CLOSE");
-		// 			break;
-
-		// 		case "SOCKET_ERROR":
-		// 			console.log("SOCKET_ERROR");
-		// 			break;
-
-		// 		case "SOCKET_REGISTER":
-		// 			console.log("SOCKET_REGISTER");
-		// 			break;
-
-		// 		case "SOCKET_KEEPALIVE":
-		// 			console.log("SOCKET_KEEPALIVE");
-		// 			break;
-
-		// 		case "SOCKET_MESSAGE":
-		// 			console.log("SOCKET_MESSAGE");
-		// 			break;
-		// 	}
-		// }
-
-		// function sendMessage() {
-		// 	// send any data like this
-		// 	var data = {
-		// 		foo: "bar",
-		// 		thing: 1
-		// 	};
-		// 	frameMessaging.sendFrameMessage(data);
-		// }
-
+		// load the comms code provided by the server
+		// This page is loaded as a frame and is passed the parent origin as a url param, 
+		// so we can use that to get "https://whereYourServerIs.com/framecode.js"
 		window.onload = function () {
-			console.log("ting");
-			// start();
+			const s = document.createElement('script');
+			s.src = new URLSearchParams(location.search).get("parentOrigin") + "/framecode.js";
+			s.onload = () => {
+				frameMessaging.init(); // Start comms!
 
-			document.addEventListener('keydown', logArrowKeys);
+				frameMessaging.onHostMessage = onHostMessage; // set a function to get the messages
+			};
+			document.head.appendChild(s);
 		};
 
-		// debug keys
+		// Incoming messages!
+		function onHostMessage(msg) {
+			var type = msg.type;
+			var message = msg.data;
+			switch (type) {
+				case "SOCKET_OPEN":
+					console.log("SOCKET_OPEN");
+					break;
 
-		function logArrowKeys(e) {
-			const arrows = {
-				ArrowUp: 'Up',
-				ArrowDown: 'Down',
-				ArrowLeft: 'Left',
-				ArrowRight: 'Right'
-			};
+				case "SOCKET_CLOSE":
+					console.log("SOCKET_CLOSE");
+					break;
 
-			if (arrows[e.key]) {
-				console.log(`Arrow key pressed: ${arrows[e.key]}`);
+				case "SOCKET_ERROR":
+					console.log("SOCKET_ERROR");
+					break;
+
+				case "SOCKET_REGISTER":
+					console.log("SOCKET_REGISTER");
+					break;
+
+				case "SOCKET_KEEPALIVE":
+					console.log("SOCKET_KEEPALIVE");
+					break;
+
+				case "SOCKET_MESSAGE":
+					console.log("SOCKET_MESSAGE");
+					onSocketMessage(message);
+					break;
 			}
 		}
+
+		function onSocketMessage(message) {
+			document.getElementById("nusers").innerHTML = message.data.connectedUsers;
+
+		}
+
 	</script>
 </head>
 
 <body>
+	<p id="nusers"></p>
 </body>
 
 </html>
