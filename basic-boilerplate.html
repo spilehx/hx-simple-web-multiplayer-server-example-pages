@@ -52,7 +52,32 @@
 
 		function onSocketMessage(message) {
 			document.getElementById("nusers").innerHTML = message.data.connectedUsers;
+		}
 
+
+		/* Create functions like these to send data */
+
+		function sendGlobalMessage() {
+			// GlobalMessages are passed on to ALL users
+
+			// You can send ANY data structure you like!
+			var data = {
+				foo: "bar",
+				thing: 1
+			};
+			frameMessaging.sendGlobalMessage(data);
+		}
+
+		function sendDirectMessage() {
+			// DirectMessage are passed only to a specific user
+			// a user list is sent to you in your GlobalMessages, find UserId there
+			var userID = "1234567";
+			// You can send ANY data structure you like!
+			var data = {
+				foo: "bar",
+				thing: 1
+			};
+			frameMessaging.sendDirectMessage(data, userID);
 		}
 
 	</script>
