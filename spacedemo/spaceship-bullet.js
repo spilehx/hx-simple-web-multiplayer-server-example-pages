@@ -9,7 +9,7 @@ function $extend(from, fields) {
 }
 var EReg = function(r,opt) {
 	this.r = new RegExp(r,opt.split("u").join(""));
-}; 
+};
 $hxClasses["EReg"] = EReg;
 EReg.__name__ = "EReg";
 EReg.prototype = {
@@ -33,7 +33,6 @@ EReg.prototype = {
 var FrameMessaging = function() {
 	this.pageLoaded = false;
 	this.frameCodeLoaded = false;
-	this.FRAMECODE_URL = "https://spile.habited.space/framecode.js";
 	this.users = [];
 };
 $hxClasses["FrameMessaging"] = FrameMessaging;
@@ -46,18 +45,26 @@ FrameMessaging.prototype = {
 		this.addFrameCode();
 	}
 	,addFrameCode: function() {
-		var scriptEl = window.document.createElement("script");
-		scriptEl.src = this.FRAMECODE_URL;
-		scriptEl.onload = $bind(this,this.onFrameCodeLoaded);
-		scriptEl.onerror = $bind(this,this.onFrameCodeLoadError);
-		window.document.head.appendChild(scriptEl);
+		this.scriptEl = window.document.createElement("script");
+		var tmp = this.getUrlParameter("parentOrigin");
+		this.scriptEl.src = tmp + "/framecode.js";
+		this.scriptEl.onload = $bind(this,this.onFrameCodeLoaded);
+		this.scriptEl.onerror = $bind(this,this.onFrameCodeLoadError);
+		window.document.head.appendChild(this.scriptEl);
 		window.onload = $bind(this,this.onPageLoaded);
 	}
+	,getUrlParameter: function(paramName) {
+		var urlSearchParams = new URLSearchParams($global.location.search);
+		if(urlSearchParams.has(paramName) == true) {
+			return urlSearchParams.get(paramName);
+		}
+		return "";
+	}
 	,onFrameCodeLoadError: function(e) {
-		haxe_Log.trace("Failed to load framecode.js at: " + this.FRAMECODE_URL,{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 46, className : "FrameMessaging", methodName : "onFrameCodeLoadError"});
+		haxe_Log.trace("Failed to load framecode.js at: " + this.scriptEl.src,{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 55, className : "FrameMessaging", methodName : "onFrameCodeLoadError"});
 	}
 	,onFrameCodeLoaded: function(e) {
-		haxe_Log.trace("framecode.js loaded",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 50, className : "FrameMessaging", methodName : "onFrameCodeLoaded"});
+		haxe_Log.trace("framecode.js loaded",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 59, className : "FrameMessaging", methodName : "onFrameCodeLoaded"});
 		this.frameCodeLoaded = true;
 		this.checkReadyStateAndProceed();
 	}
@@ -80,7 +87,7 @@ FrameMessaging.prototype = {
 				this.onReady();
 			}
 		} else {
-			haxe_Log.trace("Frame Messaging not active",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 77, className : "FrameMessaging", methodName : "start"});
+			haxe_Log.trace("Frame Messaging not active",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 86, className : "FrameMessaging", methodName : "start"});
 		}
 	}
 	,onHostMessage: function(rawMessage) {
@@ -102,11 +109,10 @@ FrameMessaging.prototype = {
 	}
 	,storeUsers: function(message) {
 		this.users = message.data.users;
-		haxe_Log.trace("len---> " + this.users.length,{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 105, className : "FrameMessaging", methodName : "storeUsers"});
 	}
 	,send: function(data) {
 		if(this.messageBridge == null) {
-			haxe_Log.trace("Cant send, frame Messaging not active",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 110, className : "FrameMessaging", methodName : "send"});
+			haxe_Log.trace("Cant send, frame Messaging not active",{ fileName : "../../../src/FrameMessaging.hx", lineNumber : 118, className : "FrameMessaging", methodName : "send"});
 			return;
 		}
 		this.messageBridge.sendGlobalMessage(data);
@@ -6955,6 +6961,18 @@ MainScene.prototype = $extend(ceramic_Scene.prototype,{
 		ship.pos(x,y);
 		ship.add();
 		this.userShips.push(ship);
+		ship.sprite.color = this.getColorByUserId(userID);
+	}
+	,getColorByUserId: function(userID) {
+		haxe_Log.trace("uuid " + userID,{ fileName : "../../../src/MainScene.hx", lineNumber : 113, className : "MainScene", methodName : "getColorByUserId"});
+		var hash = 0;
+		var _g = 0;
+		var _g1 = userID.length;
+		while(_g < _g1) {
+			var i = _g++;
+			hash = hash * 31 + HxOverrides.cca(userID,i) & 16777215;
+		}
+		return hash;
 	}
 	,saveShipProperties: function(ship) {
 		var saved = this.getSavedUserShipProperties(ship.userID);
@@ -6962,7 +6980,6 @@ MainScene.prototype = $extend(ceramic_Scene.prototype,{
 		var savedJson = JSON.stringify(saved);
 		var currentJson = JSON.stringify(current);
 		if(savedJson != currentJson) {
-			haxe_Log.trace("NOT SAME",{ fileName : "../../../src/MainScene.hx", lineNumber : 127, className : "MainScene", methodName : "saveShipProperties"});
 			var data = { shipProperties : ship.getProperties()};
 			FrameMessaging.instance.send(data);
 		}
@@ -6977,8 +6994,6 @@ MainScene.prototype = $extend(ceramic_Scene.prototype,{
 			if(saved != null) {
 				if(ship != this.currentUserSpaceship) {
 					this.setShipPropsFromSaved(ship,saved);
-				} else {
-					haxe_Log.trace("is user ship",{ fileName : "../../../src/MainScene.hx", lineNumber : 143, className : "MainScene", methodName : "setShipProperties"});
 				}
 			}
 		}
@@ -7005,6 +7020,7 @@ MainScene.prototype = $extend(ceramic_Scene.prototype,{
 		return null;
 	}
 	,removeShip: function(userID) {
+		haxe_Log.trace("REMOVE SHIP " + userID,{ fileName : "../../../src/MainScene.hx", lineNumber : 170, className : "MainScene", methodName : "removeShip"});
 		var ship = this.getUserShip(userID);
 		HxOverrides.remove(this.userShips,ship);
 		ship.remove();
